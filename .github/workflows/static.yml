@@ -1,43 +1,231 @@
-# Simple workflow for deploying static content to GitHub Pages
-name: Deploy static content to Pages
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Savings for Christians</title>
 
-on:
-  # Runs on pushes targeting the default branch
-  push:
-    branches: ["main"]
+<!-- STYLES -->
+<style>
+/* GLOBAL */
+body {
+  margin: 0;
+  font-family: "Segoe UI", Arial, sans-serif;
+  background: #fdfaf5;
+  color: #222;
+}
 
-  # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
+/* HEADER */
+header {
+  background: linear-gradient(135deg, #145a2a, #1e7f3b);
+  color: #ffd700;
+  text-align: center;
+  padding: 40px 15px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+header h1 {
+  margin: 0;
+  font-size: 32px;
+  letter-spacing: 1px;
+  font-weight: bold;
+}
+header p { margin: 8px 0; font-size: 16px; }
 
-# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
-permissions:
-  contents: read
-  pages: write
-  id-token: write
+/* CONTAINER */
+.container {
+  max-width: 720px;
+  margin: 25px auto;
+  background: #fffef9;
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
 
-# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
-# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
+/* SECTIONS */
+h2 { color: #1e7f3b; margin-bottom: 12px; }
 
-jobs:
-  # Single deploy job since we're just deploying
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          # Upload entire repository
-          path: '.'
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+input, button {
+  width: 100%;
+  padding: 14px;
+  margin-top: 10px;
+  border-radius: 8px;
+  font-size: 15px;
+}
+
+input { border: 1px solid #ccc; }
+
+button {
+  background: linear-gradient(90deg, #ffd700, #ffc107);
+  color: #145a2a;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+  transition: 0.3s;
+}
+
+button:hover {
+  background: linear-gradient(90deg, #ffc107, #ffd700);
+  transform: translateY(-2px);
+}
+
+/* NOTES */
+.note {
+  background: #fff9e6;
+  padding: 16px;
+  border-left: 5px solid #ffd700;
+  font-size: 14px;
+  border-radius: 6px;
+  margin-top: 15px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+/* DASHBOARD CARDS */
+.dashboard {
+  background: #fffef9;
+  padding: 18px;
+  border-radius: 10px;
+  border: 1px solid #eee;
+  margin-top: 15px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+.dashboard p { margin: 7px 0; }
+
+.status-paid { color: green; font-weight: bold; }
+.status-pending { color: orange; font-weight: bold; }
+
+/* FOOTER */
+footer {
+  text-align: center;
+  padding: 20px;
+  font-size: 14px;
+  color: #555;
+}
+
+/* RESPONSIVE */
+@media (max-width: 480px) {
+  header h1 { font-size: 26px; }
+  header p { font-size: 14px; }
+  .container { padding: 18px; }
+  input, button { padding: 12px; }
+}
+</style>
+
+<!-- FIREBASE SDK -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc, collection, addDoc, updateDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+
+/* FIREBASE CONFIG */
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+
+/* INITIALIZE */
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const storage = getStorage(app);
+
+/* REGISTER MEMBER */
+window.register = async () => {
+  const name = document.getElementById("reg-name").value;
+  const phone = document.getElementById("reg-phone").value;
+  const email = document.getElementById("reg-email").value;
+  const password = document.getElementById("reg-password").value;
+
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, email, password);
+    await setDoc(doc(db, "users", cred.user.uid), {
+      name, phone, email,
+      role: "member",
+      memberId: "SSC-" + Math.floor(Math.random()*100000),
+      daysPaid: 0,
+      totalSaved: 0
+    });
+    alert("Registration successful!");
+    location.reload();
+  } catch(err) { alert(err.message); }
+};
+
+/* LOGIN MEMBER/ADMIN */
+window.login = async () => {
+  const email = document.getElementById("login-email").value;
+  const password = document.getElementById("login-password").value;
+
+  try {
+    const cred = await signInWithEmailAndPassword(auth, email, password);
+    const snap = await getDoc(doc(db, "users", cred.user.uid));
+    const role = snap.data().role;
+    if(role === "admin") window.location.href = "admin.html";
+    else window.location.href = "member.html";
+  } catch(err) { alert(err.message); }
+};
+</script>
+
+</head>
+<body>
+
+<header>
+  <h1>Smart Savings for Christians</h1>
+  <p>Saving Faithfully • Growing Wisely</p>
+  <p><strong>Daily Contribution: ₦200</strong></p>
+</header>
+
+<div class="container">
+
+  <!-- PAYMENT DETAILS -->
+  <div class="note">
+    <strong>Account Name:</strong> Judith Uyiosa<br>
+    <strong>Account Number:</strong> 9042614892<br>
+    <strong>Bank:</strong> OPay<br>
+    <strong>Daily Contribution:</strong> ₦200
+  </div>
+
+  <!-- REGISTRATION -->
+  <h2>Member Registration</h2>
+  <input id="reg-name" placeholder="Full Name">
+  <input id="reg-phone" placeholder="Phone">
+  <input id="reg-email" placeholder="Email">
+  <input id="reg-password" type="password" placeholder="Password">
+  <button onclick="register()">Register</button>
+
+  <!-- LOGIN -->
+  <h2>Login</h2>
+  <input id="login-email" placeholder="Email">
+  <input id="login-password" type="password" placeholder="Password">
+  <button onclick="login()">Login</button>
+
+  <!-- DEMO MEMBER DASHBOARD -->
+  <h2>Member Dashboard (Demo)</h2>
+  <div class="dashboard">
+    <p><strong>Name:</strong> Demo Member</p>
+    <p><strong>Member ID:</strong> SSC-0001</p>
+    <p><strong>Days Paid:</strong> 5</p>
+    <p><strong>Total Saved:</strong> ₦1,000</p>
+    <p><strong>Today Status:</strong> <span class="status-pending">Pending Approval</span></p>
+  </div>
+
+  <!-- TRANSPARENCY -->
+  <h2>Transparency & Accountability</h2>
+  <div class="note">
+    All contributions are verified and recorded.<br>
+    Members can view their personal savings history.<br><br>
+    <strong>“Moreover it is required in stewards, that a man be found faithful.”</strong><br>
+    — 1 Corinthians 4:2
+  </div>
+
+</div>
+
+<footer>
+  © 2026 Smart Savings for Christians
+</footer>
+
+</body>
+</html>
